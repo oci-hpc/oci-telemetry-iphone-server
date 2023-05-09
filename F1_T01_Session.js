@@ -3,7 +3,7 @@
 const dgram = require('dgram');
 const server = dgram.createSocket('udp4');
 const fs = require('fs');
-var F1_T01_SessionCreateDict = require('../openmct/example/F1_T01_Session/F1_T01_SessionCreateDict');
+var F1_T01_SessionCreateDict = require('../oci-telemetry-esports-F122-client/example/F1_T01_Session/F1_T01_SessionCreateDict');
 
 //asynchronous Clean history of duplicates
 // Loops through each channels history and removes duplicate points to save memory
@@ -44,7 +44,7 @@ function F1_T01_Session() {
 	// read the keys from dictionary
 	const localDictionary = new F1_T01_SessionCreateDict;
 	let rawDict = JSON.stringify(localDictionary);
-	//let rawDict = fs.readFileSync('../openmct/example/F1_T01_Session/F1_T01_Sessiondictionary.json')
+	//let rawDict = fs.readFileSync('../oci-telemetry-esports-F122-client/example/F1_T01_Session/F1_T01_Sessiondictionary.json')
 	let dict = JSON.parse(rawDict)
 	//console.log(dict.measurements.map(obj => obj.key))
 

@@ -3,7 +3,7 @@
 const dgram = require('dgram');
 const server = dgram.createSocket('udp4');
 const fs = require('fs');
-var F1_T10_Car_DamageCreateDict = require('../openmct/example/F1_T10_Car_Damage/F1_T10_Car_DamageCreateDict');
+var F1_T10_Car_DamageCreateDict = require('../oci-telemetry-esports-F122-client/example/F1_T10_Car_Damage/F1_T10_Car_DamageCreateDict');
 
 //asynchronous Clean history of duplicates
 // Loops through each channels history and removes duplicate points to save memory
@@ -45,7 +45,7 @@ function F1_T10_Car_Damage() {
 	const localDictionary = new F1_T10_Car_DamageCreateDict;
 	//console.log(localDictionary);
 	let rawDict = JSON.stringify(localDictionary);
-	//let rawDict = fs.readFileSync('../openmct/example/F1_T10_Car_Damage/F1_T10_Car_Damagedictionary.json')
+	//let rawDict = fs.readFileSync('../oci-telemetry-esports-F122-client/example/F1_T10_Car_Damage/F1_T10_Car_Damagedictionary.json')
 	let dict = JSON.parse(rawDict)
 	//console.log(dict.measurements.map(obj => obj.key))
 

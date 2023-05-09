@@ -3,7 +3,7 @@
 const dgram = require('dgram');
 const server = dgram.createSocket('udp4');
 const fs = require('fs');
-var F1_T08_Final_ClassificationCreateDict = require('../openmct/example/F1_T08_Final_Classification/F1_T08_Final_ClassificationCreateDict');
+var F1_T08_Final_ClassificationCreateDict = require('../oci-telemetry-esports-F122-client/example/F1_T08_Final_Classification/F1_T08_Final_ClassificationCreateDict');
 
 //asynchronous Clean history of duplicates
 // Loops through each channels history and removes duplicate points to save memory
@@ -45,7 +45,7 @@ function F1_T08_Final_Classification() {
 	const localDictionary = new F1_T08_Final_ClassificationCreateDict;
 	//console.log(localDictionary);
 	let rawDict = JSON.stringify(localDictionary);
-	//let rawDict = fs.readFileSync('../openmct/example/F1_T08_Final_Classification/F1_T08_Final_Classificationdictionary.json')
+	//let rawDict = fs.readFileSync('../oci-telemetry-esports-F122-client/example/F1_T08_Final_Classification/F1_T08_Final_Classificationdictionary.json')
 	let dict = JSON.parse(rawDict)
 	//console.log(dict.measurements.map(obj => obj.key))
 
