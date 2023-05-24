@@ -1,9 +1,9 @@
-// telemetry source object for the F1_T07_Car_Status
+// telemetry source object for the iPhone_SensorLog
 
 const dgram = require('dgram');
 const server = dgram.createSocket('udp4');
 const fs = require('fs');
-var F1_T07_Car_StatusCreateDict = require('../oci-telemetry-esports-F122-client/example/F1_T07_Car_Status/F1_T07_Car_StatusCreateDict');
+var iPhone_SensorLogCreateDict = require('../oci-telemetry-iphone-client/example/iPhone_SensorLog/iPhone_SensorLogCreateDict');
 
 //asynchronous Clean history of duplicates
 // Loops through each channels history and removes duplicate points to save memory
@@ -26,7 +26,7 @@ async function asyncCleanHistoryOfDuplicates(obj) {
 	}
 	
 	return new Promise((resolve, reject) => {
-		console.log("History Clean of Duplicates - T07 Car Status");
+		console.log("History Clean of Duplicates - iPhone_SensorLog");
 		Object.keys(obj).forEach(function (item, index) {
 			if(obj[item].length > 2){
 				cleanDuplicates(obj, item, index);
@@ -36,15 +36,15 @@ async function asyncCleanHistoryOfDuplicates(obj) {
 	});
 }
 
-function F1_T07_Car_Status() {
+function iPhone_SensorLog() {
 
 	
 	// Initialize working Parameters and Object
 
 	// read the keys from dictionary
-	const localDictionary = new F1_T07_Car_StatusCreateDict;
+	const localDictionary = new iPhone_SensorLogCreateDict;
 	let rawDict = JSON.stringify(localDictionary);
-	//let rawDict = fs.readFileSync('../oci-telemetry-esports-F122-client/example/F1_T07_Car_Status/F1_T07_Car_Statusdictionary.json')
+	//let rawDict = fs.readFileSync('../oci-telemetry-iphone-client/example/iPhone_SensorLog/iPhone_SensorLogdictionary.json')
 	let dict = JSON.parse(rawDict)
 	//console.log(dict.measurements.map(obj => obj.key))
 
@@ -58,10 +58,11 @@ function F1_T07_Car_Status() {
 	//for (let i = 0; i < this.orderedKeys.length; i++){
 	//	console.log(this.orderedKeys[i]);
 	//}
-
+	
+	// History Object, holds all the history data (messages)
     this.history = {}; //history object
     this.listeners = [];
-	this.data = []; // temporar data array
+	this.data = []; // temporary data array
 	this.continousLogging = false; //whether continous logging is used
 	this.FileTimestamp = '';
 
@@ -81,11 +82,12 @@ function F1_T07_Car_Status() {
 	}, this);
 
 	// to notify telemetry server interval based (STFE) uncomment here
-//    setInterval(function () {
-//        this.generateIntervalTelemetry();
-//    }.bind(this), 100); //z.B. 100ms according to SFTE
+    //setInterval(function () {
+    //    this.generateIntervalTelemetry();
+    //}.bind(this), 100); //z.B. 100ms according to SFTE
 
-	this.messageCount = 0 //for keeping an idea on history sizes
+
+    this.messageCount = 0 //for keeping an idea on history sizes
 
 	function storeDatum(key, newValue, message, history, keepDuplicates = false, showLogs = false) {
 		if(keepDuplicates || history[key].length < 2){
@@ -113,118 +115,90 @@ function F1_T07_Car_Status() {
 				console.log(e)
 			}
 		}
-		if(showLogs) console.log("Finish---",key);
+		if(showLogs) console.log("Finish---", key);
 	}
 
-	function clearHistory(history){
-		console.log("Clear History");
-		Object.keys(history).forEach(function (k) {
-			history[k] = [];
-		});
-		this.messageCount = 0;
-	}
-
-	//what to do, when a message from the UDP Port arrives
+	// What to do when a message from the UDP Port arrives
     server.on('message', (msg, rinfo) => {
 		//parse the data (expected: key, data, timestamp in seconds)
 		//this.data = `${msg}`.split(',');
+		
 		try{
 			this.data = JSON.parse(`${msg}`);
 		}
 		catch(err){
-			console.log("Rouge message, packet 07:");
+			console.log("Rouge message, packet iPhoneSensorLog:");
 			console.log(err);
 			return;
 		}
+		//console.log(this.data.length);
+		if(this.data.length != 3){
+			console.log("Rouge message, packet iPhoneSensorLog:");
+			return;
+		}
+		// Packet iPhoneSensorLog is expected to be 82
+		//console.log("Packet iPhoneSensorLog length", this.data[1].length);
+		if(this.data[1].length != 82){
+			console.log("Rouge message length, packet iPhoneSensorLog:");
+			return;
+		}
 		
+		//console.log(this.data);
+
+
+		this.messageCount = this.messageCount + 1;
+		if(this.messageCount % 1000 == 0){
+			console.log("    Packet iPhoneSensorLog messages received: ", this.messageCount);
+			// usages in megabytes(MB)
+    		//console.log("Memory usage by rss:", process.memoryUsage.rss()/1000000, "MB");
+			//var tidyObj = asyncCleanHistoryOfDuplicates(this.history);
+		}
+
 		// Check server message
 		//console.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`)
         //console.log(`server got: ${this.data[8]} from ${rinfo.address}:${rinfo.port}`)
 		
-		//console.log(this.data.length);
-
-		// Checks for bad packets
-		if(this.data.length != 4){
-			console.log("Rouge message, packet 07:");
-			return;
-		}
-		// Packet 07 is expected to be 506
-		//console.log("Packet 7 length", this.data[2].length);
-		if(this.data[2].length != 506){
-			console.log("Rouge message length, packet 07:");
-			return;
-		}
-		
-		this.messageCount = this.messageCount + 1;
-		if(this.messageCount % 600 == 0){
-			console.log("    Packet 07 messages received: ", this.messageCount);
-			// usages in megabytes(MB)
-    		//console.log("Memory usage by rss:", process.memoryUsage.rss()/1000000, "MB");
-			//this.asyncCleanHistoryOfDuplicates(this.history);
-			//var tidyObj = asyncCleanHistoryOfDuplicates(this.history);
-		}
-
-		// Now parsing a large data set, expects the data in order from the game documentation
-		// (packet_00, header, data, timestamp)
+		// Now parsing a large data set, expects the data in order from the iPhoneSensorLog documentation
+		// (packet_iPhoneSensorLog, data, timestamp)
 		//console.log(this.data[0]);
-		if(this.data[0] == "packet_07"){
+		if(this.data[0] == "packet_iPhoneSensorLog"){
 			
 			// Update state data
-			header = this.data[1];
-			slugSize = 23;
-			player1Index = header[8];
-			let sessionUID = header[5];
-			let sessionTime = header[6];
-			let frameID = header[7];
 
 			// Clear history options
-			this.clearHistory(sessionUID, sessionTime, frameID);
+			//this.clearHistory(sessionUID, sessionTime, frameID);
 
+			//console.log(this.data[1]);
+			//console.log(this.orderedKeys[0]);
 
 			// Time Stamp
-			this.state['Time.stamp'] = Math.round(this.data[3]*1000); //convert python timestamp[s] to JS timestamp [ms]
+			this.state['Time.stamp'] = Math.round(this.data[2]*1000); //convert python timestamp[s] to JS timestamp [ms]
 			//console.log(this.state['Time.stamp']);
 
-			// Player 1 data first
-			for (let i = 0; i < slugSize; i++){
+			// iPhone Data from SensorLog
+			for (let i = 0; i < 82; i++){
 				// Update current state
 				var key = this.orderedKeys[i];
 				//console.log("Start---",key);
-				var newValue = this.data[2][player1Index * slugSize + i];
+				var newValue = this.data[1][i];
 				this.state[key] = newValue;
 
-				// Build and send message, real time
+				// Build and send message
 				var message = { timestamp: this.state['Time.stamp'], value: newValue, id: key};
+				//console.log(message);
 				this.notify(message);
 
 				// Store in history
 				storeDatum(key, newValue, message, this.history, this.saveDuplicateYValues, false);
 			}
-			// Other car data
-			for (let j = 0; j < 22; j++){
-				for (let k = 0; k < slugSize; k++){
-					// Update current state
-					var key = this.orderedKeys[slugSize + (j * slugSize) + k];
-					//console.log("Start---", key);
-					var newValue = this.data[2][j * slugSize + k];
-					this.state[key] = newValue;
-
-					// Build and send message
-					var message = { timestamp: this.state['Time.stamp'], value: newValue, id: key};
-					this.notify(message);
-					
-					// Store in history
-					storeDatum(key, newValue, message, this.history, this.saveDuplicateYValues, false);
-				}
-			}
 		}
 	});
 	
 	server.on('error', (err) => {
-		console.log(`F1_T07_Car_Status UDP server error:\n${err.stack}`);
+		console.log(`iPhone_SensorLog UDP server error:\n${err.stack}`);
 		try{
 			console.log('Try to reconnect...')
-			server.bind(57022);
+			server.bind(50022);
 		} catch(e) {
 			console.log('Reconnect Failed...')
 			console.log(e)
@@ -234,21 +208,21 @@ function F1_T07_Car_Status() {
 	});
 
 	// port specified in the associated python script
-	server.bind(57022);
+	server.bind(50022);
 
-    console.log("--F1_T07_Car_Status initialized--");
+    console.log("--iPhone_SensorLog initialized--");
 };
 
 
 // to update every time new data comes in
-F1_T07_Car_Status.prototype.generateRealtimeTelemetry = function () {
+iPhone_SensorLog.prototype.generateRealtimeTelemetry = function () {
 
 	// Real Timestamp
 	var timestamp = this.state['Time.stamp'];
 	// Artificial timestamp
 	//var timestamp= Date.now();
 
-	// built message
+	// build message
 	var message = { timestamp: timestamp, value: this.state[this.data[0]], id: this.data[0]};
 	// notify realtimeserver
 	this.notify(message);
@@ -258,7 +232,7 @@ F1_T07_Car_Status.prototype.generateRealtimeTelemetry = function () {
 
 
 // to update interval based (STFE)
-F1_T07_Car_Status.prototype.generateIntervalTelemetry = function () {
+iPhone_SensorLog.prototype.generateIntervalTelemetry = function () {
 
     Object.keys(this.state).forEach(function (id) {
 
@@ -278,7 +252,7 @@ F1_T07_Car_Status.prototype.generateIntervalTelemetry = function () {
 
 
 // notifiy function, called in generate Telemetry, notifies listeners
-F1_T07_Car_Status.prototype.notify = function (point) {
+iPhone_SensorLog.prototype.notify = function (point) {
     this.listeners.forEach(function (l) {
         l(point);
     });
@@ -286,7 +260,7 @@ F1_T07_Car_Status.prototype.notify = function (point) {
 
 
 // manages listeners for realtime telemetry
-F1_T07_Car_Status.prototype.listen = function (listener) {
+iPhone_SensorLog.prototype.listen = function (listener) {
     this.listeners.push(listener);
     return function () {
         this.listeners = this.listeners.filter(function (l) {
@@ -296,7 +270,7 @@ F1_T07_Car_Status.prototype.listen = function (listener) {
 };
 
 // Creating a File Timestamp 
-F1_T07_Car_Status.prototype.SetFileTimestamp = function () {
+iPhone_SensorLog.prototype.SetFileTimestamp = function () {
 
 	//zero needed for right time and date format when copy-pasting in OpenMCT
 	addZero = function(dateNumber) {
@@ -318,15 +292,15 @@ F1_T07_Car_Status.prototype.SetFileTimestamp = function () {
 };
 
 // Clears the object history arrays
-F1_T07_Car_Status.prototype.clearHistoryObject = function (){
-	console.log("Clear History Object - F1_T07_Car_Status");
+iPhone_SensorLog.prototype.clearHistoryObject = function (){
+	console.log("Clear History Object - F1_T00_Motion");
 	Object.keys(this.history).forEach(function (k) {
 		this.history[k] = [];
 	}, this);
 }
 
 // Does some checks and clears history arrays if criteria met
-F1_T07_Car_Status.prototype.clearHistory = function (sessionUID, sessionTime, frameID){
+iPhone_SensorLog.prototype.clearHistory = function (sessionUID, sessionTime, frameID){
 	// Clear on new session
 	if(this.clearHistoryOnNewSession){
 		// Initialize
@@ -334,6 +308,7 @@ F1_T07_Car_Status.prototype.clearHistory = function (sessionUID, sessionTime, fr
 			this.currentSessionUID = sessionUID;
 		}
 		if(this.currentSessionUID != sessionUID){
+			//console.log("Clear history, new session UID:", sessionUID);
 			this.clearHistoryObject();
 			this.currentSessionUID = sessionUID;
 			this.messageCount = 0;
@@ -374,7 +349,7 @@ F1_T07_Car_Status.prototype.clearHistory = function (sessionUID, sessionTime, fr
 };
 
 //asynchronous Strigify an object/a variable to JSON format
-F1_T07_Car_Status.prototype.asyncStringyify = function (obj) {
+iPhone_SensorLog.prototype.asyncStringyify = function (obj) {
 	return new Promise((resolve, reject) => {
 	  resolve(JSON.stringify(obj));
 	});
@@ -383,7 +358,7 @@ F1_T07_Car_Status.prototype.asyncStringyify = function (obj) {
 
 
 // what to do on incoming command
-F1_T07_Car_Status.prototype.command = function (command) {
+iPhone_SensorLog.prototype.command = function (command) {
 
 	// Logs the history variable (this.history) once
 	if(command === ':saveHistory'){
@@ -399,7 +374,7 @@ F1_T07_Car_Status.prototype.command = function (command) {
 		  }
 
 		this.asyncStringyify(this.history).then(function(write) {//write is the value of the resolved promise in asyncStringify
-			fs.writeFile(__dirname + '/saved_logs/F1_T07_Car_Status_'+this.FileTimestamp+'_History.json', write, (err) => {
+			fs.writeFile(__dirname + '/saved_logs/iPhone_SensorLog_'+this.FileTimestamp+'_History.json', write, (err) => {
 				if (err) {
 					console.log(err);
 				} else {
@@ -432,7 +407,7 @@ F1_T07_Car_Status.prototype.command = function (command) {
 	// 	save log in specified interval
 	// 	logging = setInterval(function () {
 	// 		asyncLogging(this.history).then(function(write) {//write is the value of the resolved promise in asyncStringify
-	// 			fs.writeFile(__dirname + '/saved_logs/F1_T07_Car_Status_'+this.FileTimestam+'.json', write, (err) => {
+	// 			fs.writeFile(__dirname + '/saved_logs/iPhone_SensorLog_'+this.FileTimestam+'.json', write, (err) => {
 	// 				if (err) {
 	// 					throw err;
 	// 				}
@@ -458,22 +433,20 @@ F1_T07_Car_Status.prototype.command = function (command) {
 		this.SetFileTimestamp()
 
 		this.continousLogging = true;
-		console.log('Logging started!')	;
+		console.log('Logging started!')	
 	};
 
 	if(command === ':endLog'){
 		this.continousLogging = false;
-		console.log('Logging stopped!')	;
+		console.log('Logging stopped!')	
 	};
 
 
 	// Example implementation of sending a command
 	if(command === ':exampleCommandtoPlane'){
 		// sending to the specified udp port on the address 'loacalhost'
-		// Running locally your can use localhost or 0.0.0.0, on cloud use 0.0.0.0
-		//server.send(command,57023, 'localhost')
-		server.send(command,57023, '0.0.0.0')
-		console.log('Command Sent via UDP Port!');
+		server.send(command,50023, 'localhost')
+		console.log('Command Sent via UDP Port!')	
 	};
 
 	
@@ -481,5 +454,5 @@ F1_T07_Car_Status.prototype.command = function (command) {
 
 
 module.exports = function () {
-    return new F1_T07_Car_Status();
+    return new iPhone_SensorLog()
 };
